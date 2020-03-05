@@ -221,7 +221,9 @@ namespace LibRobot.Graph
                 }
                 else if (c is ExternalComponent ec)
                 {
-                    componentMap.Add(c, dest.Components.AddExternal(ec.Type));
+                    var nc = dest.Components.AddExternal(ec.Type);
+                    nc.DisplayName = ec.DisplayName;
+                    componentMap.Add(c, nc);
                 }
                 else
                 {
@@ -301,16 +303,6 @@ namespace LibRobot.Graph
                 {
                     Debug.Assert(cp.Interface != null);
                     return im[cp.Interface].ConnectionPoints[cp.Name];
-                    //var connectionPoints = im[cp.Interface].ConnectionPoints;
-                    //return cp.Type switch
-                    //{
-                    //    ConnectionPointType.MemoryLink => connectionPoints.AddMemoryLink(cp.Name, cp.BitLength),
-                    //    ConnectionPointType.MemoryReceive => connectionPoints.AddMemoryReceiver(cp.Name, cp.BitLength),
-                    //    ConnectionPointType.MemorySend => connectionPoints.AddMemorySender(cp.Name, cp.BitLength),
-                    //    ConnectionPointType.SignalReceive => connectionPoints.AddSignalReceiver(cp.Name),
-                    //    ConnectionPointType.SignalSend => connectionPoints.AddSignalSender(cp.Name),
-                    //    _ => throw new Exception("internal error"),
-                    //};
                 }
             }
 

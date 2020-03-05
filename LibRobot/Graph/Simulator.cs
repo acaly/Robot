@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace LibRobot.Graph
@@ -47,12 +48,22 @@ namespace LibRobot.Graph
         private readonly ChannelInfo[] _channels;
         private readonly InitialMemoryValues[] _initialValues;
 
+        private readonly Dictionary<string, int> _analogInput;
+        private readonly Dictionary<string, int> _analogOutput;
+        private readonly Dictionary<string, int> _digitalInput;
+        private readonly Dictionary<string, int> _digitalOutput;
+
         private readonly int _initChannel;
         private readonly int _tickChannel;
 
         private bool _allowRead, _allowWrite;
         private readonly List<int> _nextTriggerList = new List<int>();
         private readonly List<int> _processingTriggerList = new List<int>();
+
+        public ExternalAnalogWriter AnalogWriter;
+        public ExternalAnalogReader AnalogReader;
+        public ExternalDigitalWriter DigitalWriter;
+        public ExternalDigitalReader DigitalReader;
         
         public Simulator(Program program)
         {
@@ -83,6 +94,16 @@ namespace LibRobot.Graph
                 }
             }
             _initialValues = initialValues.ToArray();
+
+            _analogInput = GetExternalDictionary(program, ExternalComponentType.AnalogInput, memConnectionMapping);
+            _analogOutput = GetExternalDictionary(program, ExternalComponentType.AnalogOutput, memConnectionMapping);
+            _digitalInput = GetExternalDictionary(program, ExternalComponentType.DigitalInput, memConnectionMapping);
+            _digitalOutput = GetExternalDictionary(program, ExternalComponentType.DigitalOutput, memConnectionMapping);
+
+            AnalogReader = new ExternalAnalogReader(this);
+            AnalogWriter = new ExternalAnalogWriter(this);
+            DigitalReader = new ExternalDigitalReader(this);
+            DigitalWriter = new ExternalDigitalWriter(this);
         }
 
         private static void CompileMemory(Program program, out MemoryInfo[] info,
@@ -542,11 +563,19 @@ namespace LibRobot.Graph
             }
         }
 
+        private static Dictionary<string, int> GetExternalDictionary(Program program, ExternalComponentType type,
+            Dictionary<AbstractConnection, int> mapping)
+        {
+            return program.Module.Components
+                .Where(cc => cc is ExternalComponent ex && ex.Type == type && cc.DisplayName != null)
+                .ToDictionary(cc => cc.DisplayName, cc => mapping[cc.ConnectionPoints["buffer"].Connection]);
+        }
+
         public void Start()
         {
             foreach (var i in _initialValues)
             {
-                WriteMemory(i.MemoryIndex, i.Data);
+                WriteMemory(i.MemoryIndex, i.Data, true);
             }
 
             Trigger(_initChannel);
@@ -594,16 +623,178 @@ namespace LibRobot.Graph
             _allowWrite = false;
         }
 
-        //TODO provide API to support external
+        public sealed class ExternalAnalogReader
+        {
+            private readonly Simulator _simulator;
+
+            internal ExternalAnalogReader(Simulator simulator)
+            {
+                _simulator = simulator;
+            }
+
+            public double this[string name]
+            {
+                get
+                {
+                    if (!_simulator._analogOutput.TryGetValue(name, out var index))
+                    {
+                        throw new KeyNotFoundException();
+                    }
+                    var mem = _simulator._memorySegments[index];
+                    if (mem.TotalLength == 8)
+                    {
+                        byte data = 0;
+                        _simulator.ReadMemory(index, MemoryMarshal.CreateSpan(ref data, 1), true);
+                        return data / 255.0;
+                    }
+                    else if (mem.TotalLength == 16)
+                    {
+                        ushort data = 0;
+                        _simulator.ReadMemory(index, MemoryMarshal.Cast<ushort, byte>(MemoryMarshal.CreateSpan(ref data, 1)), true);
+                        return data / (double)ushort.MaxValue;
+                    }
+                    else if (mem.TotalLength == 32)
+                    {
+                        uint data = 0;
+                        _simulator.ReadMemory(index, MemoryMarshal.Cast<uint, byte>(MemoryMarshal.CreateSpan(ref data, 1)), true);
+                        return data / (double)uint.MaxValue;
+                    }
+                    else if (mem.TotalLength == 64)
+                    {
+                        ulong data = 0;
+                        _simulator.ReadMemory(index, MemoryMarshal.Cast<ulong, byte>(MemoryMarshal.CreateSpan(ref data, 1)), true);
+                        return data / (double)ulong.MaxValue;
+                    }
+                    else
+                    {
+                        throw new NotImplementedException("unaligned memory is not supported");
+                    }
+                }
+            }
+        }
+
+        public sealed class ExternalAnalogWriter
+        {
+            private readonly Simulator _simulator;
+
+            internal ExternalAnalogWriter(Simulator simulator)
+            {
+                _simulator = simulator;
+            }
+
+            public double this[string name]
+            {
+                set
+                {
+                    if (!_simulator._analogInput.TryGetValue(name, out var index))
+                    {
+                        throw new KeyNotFoundException();
+                    }
+                    var mem = _simulator._memorySegments[index];
+                    if (mem.TotalLength == 8)
+                    {
+                        byte data = (byte)(value * 255);
+                        _simulator.WriteMemory(index, MemoryMarshal.CreateSpan(ref data, 1), true);
+                    }
+                    else if (mem.TotalLength == 16)
+                    {
+                        ushort data = (ushort)(value * ushort.MaxValue);
+                        _simulator.WriteMemory(index, MemoryMarshal.Cast<ushort, byte>(MemoryMarshal.CreateSpan(ref data, 1)), true);
+                    }
+                    else if (mem.TotalLength == 32)
+                    {
+                        uint data = (uint)(value * uint.MaxValue);
+                        _simulator.WriteMemory(index, MemoryMarshal.Cast<uint, byte>(MemoryMarshal.CreateSpan(ref data, 1)), true);
+                    }
+                    else if (mem.TotalLength == 64)
+                    {
+                        ulong data = (ulong)(value * ulong.MaxValue);
+                        _simulator.WriteMemory(index, MemoryMarshal.Cast<ulong, byte>(MemoryMarshal.CreateSpan(ref data, 1)), true);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException("unaligned memory is not supported");
+                    }
+                }
+            }
+        }
+
+        public sealed class ExternalDigitalReader
+        {
+            private readonly Simulator _simulator;
+
+            internal ExternalDigitalReader(Simulator simulator)
+            {
+                _simulator = simulator;
+            }
+
+            public int GetSize(string name)
+            {
+                if (!_simulator._digitalOutput.TryGetValue(name, out var index))
+                {
+                    throw new KeyNotFoundException();
+                }
+                var mem = _simulator._memorySegments[index];
+                return mem.TotalLength;
+            }
+
+            public void Read(string name, byte[] buffer, int offset)
+            {
+                if (!_simulator._digitalOutput.TryGetValue(name, out var index))
+                {
+                    throw new KeyNotFoundException();
+                }
+                var mem = _simulator._memorySegments[index];
+                if (offset < 0 || offset + (mem.TotalLength + 7) / 8 > buffer.Length)
+                {
+                    throw new ArgumentException();
+                }
+                _simulator.ReadMemory(index, new Span<byte>(buffer, offset, mem.TotalLength / 8), true);
+            }
+        }
+
+        public sealed class ExternalDigitalWriter
+        {
+            private readonly Simulator _simulator;
+
+            internal ExternalDigitalWriter(Simulator simulator)
+            {
+                _simulator = simulator;
+            }
+
+            public int GetSize(string name)
+            {
+                if (!_simulator._digitalInput.TryGetValue(name, out var index))
+                {
+                    throw new KeyNotFoundException();
+                }
+                var mem = _simulator._memorySegments[index];
+                return mem.TotalLength;
+            }
+
+            public void Write(string name, byte[] buffer, int offset)
+            {
+                if (!_simulator._digitalInput.TryGetValue(name, out var index))
+                {
+                    throw new KeyNotFoundException();
+                }
+                var mem = _simulator._memorySegments[index];
+                if (offset < 0 || offset + (mem.TotalLength + 7) / 8 > buffer.Length)
+                {
+                    throw new ArgumentException();
+                }
+                _simulator.WriteMemory(index, new Span<byte>(buffer, offset, mem.TotalLength / 8), true);
+            }
+        }
 
         internal int GetMemorySize(int id)
         {
             return _memorySegments[id].TotalLength;
         }
 
-        internal bool ReadMemory(int id, Span<byte> buffer)
+        internal bool ReadMemory(int id, Span<byte> buffer, bool skipCheck)
         {
-            if (!_allowRead) return false;
+            if (!skipCheck && !_allowRead) return false;
             var mem = _memorySegments[id];
             int bufferPos = 0;
             for (int i = 0; i < mem.Offsets.Length; ++i)
@@ -614,9 +805,9 @@ namespace LibRobot.Graph
             return true;
         }
 
-        internal bool WriteMemory(int id, Span<byte> data)
+        internal bool WriteMemory(int id, Span<byte> data, bool skipCheck)
         {
-            if (!_allowWrite) return false;
+            if (!skipCheck && !_allowWrite) return false;
             var mem = _memorySegments[id];
             int bufferPos = 0;
             for (int i = 0; i < mem.Offsets.Length; ++i)

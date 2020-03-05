@@ -69,7 +69,7 @@ namespace LibRobot.Graph
         {
             if (!_connections.TryGetValue(connectionPoint, out var id) ||
                 id.Item2 != ConnectionPointType.MemoryReceive ||
-                !_simulator.ReadMemory(id.Item1, buffer))
+                !_simulator.ReadMemory(id.Item1, buffer, false))
             {
                 throw new InvalidOperationException();
             }
@@ -80,7 +80,7 @@ namespace LibRobot.Graph
             if (!_additionalType.HasValue ||
                 index >= _additionalId.Length ||
                 _additionalType != ConnectionPointType.MemoryReceive ||
-                !_simulator.ReadMemory(_additionalId[index], buffer))
+                !_simulator.ReadMemory(_additionalId[index], buffer, false))
             {
                 throw new InvalidOperationException();
             }
@@ -90,7 +90,7 @@ namespace LibRobot.Graph
         {
             if (!_connections.TryGetValue(connectionPoint, out var id) ||
                 id.Item2 != ConnectionPointType.MemorySend ||
-                !_simulator.WriteMemory(id.Item1, data))
+                !_simulator.WriteMemory(id.Item1, data, false))
             {
                 throw new InvalidOperationException();
             }
@@ -101,7 +101,7 @@ namespace LibRobot.Graph
             if (!_additionalType.HasValue ||
                 index >= _additionalId.Length ||
                 _additionalType != ConnectionPointType.MemorySend ||
-                !_simulator.WriteMemory(_additionalId[index], data))
+                !_simulator.WriteMemory(_additionalId[index], data, false))
             {
                 throw new InvalidOperationException();
             }

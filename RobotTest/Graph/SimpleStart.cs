@@ -1,5 +1,6 @@
 using LibRobot.Graph;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 
 namespace RobotTest.Graph
@@ -50,7 +51,14 @@ namespace RobotTest.Graph
             var calc = module.Components.AddCalculation(calcType);
             module.Connections.AddMemoryAccess(mem1.ConnectionPoints.AddSender(), calc.ConnectionPoints["read"]);
             module.Connections.AddMemoryAccess(calc.ConnectionPoints["write"], mem2.ConnectionPoints.AddReceiver());
-            module.Connections.AddSignal(initSignal, calc.ConnectionPoints["signal"]);
+            module.Connections.AddSignal(tickSignal, calc.ConnectionPoints["signal"]);
+
+            var write = module.Components.AddExternal(ExternalComponentType.DigitalInput);
+            write.DisplayName = "input";
+            var read = module.Components.AddExternal(ExternalComponentType.DigitalOutput);
+            read.DisplayName = "output";
+            module.Connections.AddMemoryAccess(write.ConnectionPoints["buffer"], mem1.ConnectionPoints.AddReceiver());
+            module.Connections.AddMemoryAccess(mem2.ConnectionPoints.AddSender(), read.ConnectionPoints["buffer"]);
 
             var linker = new Linker();
             linker.AddModule(module);
@@ -58,7 +66,14 @@ namespace RobotTest.Graph
 
             var simulator = new Simulator(program);
             simulator.Start();
-            //Tick does noting. Skipped.
+
+            int inputVal = 0x12345678;
+            simulator.DigitalWriter.Write("input", BitConverter.GetBytes(inputVal), 0);
+            simulator.Tick();
+            byte[] buffer = new byte[4];
+            simulator.DigitalReader.Read("output", buffer, 0);
+
+            Assert.AreEqual(~inputVal, BitConverter.ToInt32(buffer, 0));
         }
     }
 }
