@@ -27,11 +27,7 @@ namespace LibRobot.Graph
 
             _storage = Array.Empty<byte>();
             var storageSize = type.SimulationHandler.GetStorageSize(this);
-            if (storageSize / 8 * 8 != storageSize)
-            {
-                throw new NotImplementedException("unaligned memory not supported");
-            }
-            _storage = new byte[storageSize / 8];
+            _storage = new byte[(storageSize + 7) / 8];
         }
 
         public int GetAdditionalCount()

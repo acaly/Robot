@@ -14,6 +14,7 @@ namespace LibRobot.Graph
             public int[] Offsets;
             public int[] Lengths;
             public int TotalLength;
+            public bool IsUnaliged;
         }
 
         private class ComponentInfo
@@ -120,8 +121,6 @@ namespace LibRobot.Graph
             {
                 if (c is MemoryComponent m)
                 {
-                    CheckMemoryBoundary(m.BitSize);
-
                     mapping.Add(m, mapping.Count);
                     memSize.Add(m.BitSize);
                     segmentLinkInfo.Add(new List<Tuple<int, int>>());
@@ -141,10 +140,6 @@ namespace LibRobot.Graph
                     var mb = mapping[(MemoryComponent)l.B.Component];
                     var lsize = l.A.BitLength;
                     var lid = linkSize.Count;
-
-                    CheckMemoryBoundary(lsize);
-                    CheckMemoryBoundary(l.A.BitOffset);
-                    CheckMemoryBoundary(l.B.BitOffset);
 
                     linkSize.Add(lsize);
                     segmentLinkInfo[ma].Add(new Tuple<int, int>(lid, l.A.BitOffset));
@@ -254,11 +249,16 @@ namespace LibRobot.Graph
             int mainMemoryPos = 0;
             var tmpOffset = new List<int>();
             var tmpLen = new List<int>();
+            void AlignMemory()
+            {
+                mainMemoryPos = (mainMemoryPos + 7) / 8 * 8;
+            }
             void AddMemory(int size)
             {
                 tmpOffset.Add(mainMemoryPos);
                 tmpLen.Add(size);
                 mainMemoryPos += size;
+                AlignMemory();
             }
             
             //Allocate for linked memory
@@ -268,6 +268,7 @@ namespace LibRobot.Graph
                 if (unusedLink.Contains(i)) continue;
                 linkInMainMemory[i] = mainMemoryPos;
                 mainMemoryPos += linkSize[i];
+                AlignMemory();
             }
 
             //Allocate for each segment
@@ -364,13 +365,11 @@ namespace LibRobot.Graph
 
             info = memBlocks.ToArray();
             len = mainMemoryPos;
-        }
 
-        private static void CheckMemoryBoundary(int size)
-        {
-            if (size / 8 * 8 != size)
+            //Mark unaliged memory
+            foreach (var mem in info)
             {
-                throw new NotImplementedException("unaligned memory not supported");
+                mem.IsUnaliged = mem.Lengths.Any(len => (len & 7) != 0);
             }
         }
 
@@ -792,15 +791,77 @@ namespace LibRobot.Graph
             return _memorySegments[id].TotalLength;
         }
 
+        private static byte ReadUnalignedByte(Span<byte> buffer, int bitOffset, int bitLength)
+        {
+            var alignedByteStart = bitOffset / 8;
+            if (alignedByteStart * 8 == bitOffset)
+            {
+                //Fast path
+                return buffer[alignedByteStart];
+            }
+            //LE
+            var move = bitOffset & 7;
+            var len1 = 8 - move;
+            var len2 = bitLength - len1;
+            var first = buffer[alignedByteStart];
+            var second = len2 > 0 ? 0 : buffer[alignedByteStart + 1]; //Avoid accessing outside range
+            return (byte)(first >> move | second << len1);
+        }
+
+        private static void WriteUnalignedByte(Span<byte> buffer, int bitOffset, int bitLength, byte data)
+        {
+            var alignedByteStart = bitOffset / 8;
+            if (alignedByteStart * 8 == bitOffset)
+            {
+                //Fast path
+                buffer[alignedByteStart] = data;
+                return;
+            }
+            var move = bitOffset & 7;
+            var len1 = 8 - move;
+            var len2 = bitLength - len1;
+            //Be careful when bitLength < len1
+            var mask1 = (byte)(((byte)~(255u << bitLength)) << move);
+            buffer[alignedByteStart] &= (byte)~mask1;
+            buffer[alignedByteStart] |= (byte)((data << move) & mask1);
+            if (len2 > 0)
+            {
+                buffer[alignedByteStart + 1] &= (byte)~(255u >> len1);
+                buffer[alignedByteStart + 1] |= (byte)(data >> len1);
+            }
+        }
+
+        private static void CopyUnalignedMemory(Span<byte> src, int bitOffsetSrc, Span<byte> dest, int bitOffsetDest, int bitLength)
+        {
+            if ((bitOffsetSrc & 7) == 0 && (bitOffsetDest & 7) == 0)
+            {
+                //Fast path
+                var byteLength = (bitLength + 7) / 8;
+                src.Slice(bitOffsetSrc / 8, byteLength).CopyTo(dest.Slice(bitOffsetDest / 8, byteLength));
+            }
+            else
+            {
+                //Slow path
+                //We copy byte by byte
+                for (int i = 0; i < bitLength; i += 8)
+                {
+                    var copyLen = Math.Min(8, bitLength - i);
+                    var b = ReadUnalignedByte(src, bitOffsetSrc + i, copyLen);
+                    WriteUnalignedByte(dest, bitOffsetDest + i, copyLen, b);
+                }
+            }
+        }
+
         internal bool ReadMemory(int id, Span<byte> buffer, bool skipCheck)
         {
             if (!skipCheck && !_allowRead) return false;
             var mem = _memorySegments[id];
-            int bufferPos = 0;
+            int bufferBitPos = 0;
+            var memorySpan = new Span<byte>(_memory);
             for (int i = 0; i < mem.Offsets.Length; ++i)
             {
-                new Span<byte>(_memory, mem.Offsets[i] / 8, mem.Lengths[i] / 8).CopyTo(buffer.Slice(bufferPos, mem.Lengths[i] / 8));
-                bufferPos += mem.Lengths[i] / 8;
+                CopyUnalignedMemory(memorySpan, mem.Offsets[i], buffer, bufferBitPos, mem.Lengths[i]);
+                bufferBitPos += mem.Lengths[i];
             }
             return true;
         }
@@ -809,11 +870,12 @@ namespace LibRobot.Graph
         {
             if (!skipCheck && !_allowWrite) return false;
             var mem = _memorySegments[id];
-            int bufferPos = 0;
+            int bufferBitPos = 0;
+            var memorySpan = new Span<byte>(_memory);
             for (int i = 0; i < mem.Offsets.Length; ++i)
             {
-                data.Slice(bufferPos, mem.Lengths[i] / 8).CopyTo(new Span<byte>(_memory, mem.Offsets[i] / 8, mem.Lengths[i] / 8));
-                bufferPos += mem.Lengths[i] / 8;
+                CopyUnalignedMemory(data, bufferBitPos, memorySpan, mem.Offsets[i], mem.Lengths[i]);
+                bufferBitPos += mem.Lengths[i];
             }
             return true;
         }
