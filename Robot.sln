@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibRobot", "LibRobot\LibRobot.csproj", "{8339BC92-5CD6-498E-AE07-DAAC8CF357CC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RobotTest", "RobotTest\RobotTest.csproj", "{92F2C400-CEF5-4E33-8954-4E5901D9378E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RobotTest", "RobotTest\RobotTest.csproj", "{92F2C400-CEF5-4E33-8954-4E5901D9378E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProfilingTest", "ProfilingTest\ProfilingTest.csproj", "{5215FAE0-E450-4F3F-827E-DB66F8855F72}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{92F2C400-CEF5-4E33-8954-4E5901D9378E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92F2C400-CEF5-4E33-8954-4E5901D9378E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{92F2C400-CEF5-4E33-8954-4E5901D9378E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5215FAE0-E450-4F3F-827E-DB66F8855F72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5215FAE0-E450-4F3F-827E-DB66F8855F72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5215FAE0-E450-4F3F-827E-DB66F8855F72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5215FAE0-E450-4F3F-827E-DB66F8855F72}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

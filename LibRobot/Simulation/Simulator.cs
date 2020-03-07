@@ -34,6 +34,7 @@ namespace LibRobot.Simulation
             public int[] Components;
             public string[] ComponentTriggerPoints;
             public int[] Delays;
+            public int[] DelayChannels;
         }
 
         private class InitialMemoryValues
@@ -508,6 +509,8 @@ namespace LibRobot.Simulation
                 .Select(dd => new DelayedSignalInfo { NextSignalChannel = channels[dd].ActiveChannelId })
                 .ToArray();
 
+            var theDelayInfo = delayInfo;
+
             //Generate active channels
             foreach (var ch in channels)
             {
@@ -520,6 +523,7 @@ namespace LibRobot.Simulation
                     Components = ch.Value.Components.Select(c => componentMapping[c.Component]).ToArray(),
                     ComponentTriggerPoints = ch.Value.Components.Select(c => c.Name).ToArray(),
                     Delays = ch.Value.Delays.ToArray(),
+                    DelayChannels = ch.Value.Delays.Select(dd => theDelayInfo[dd].NextSignalChannel).ToArray(),
                 });
             }
 
@@ -598,7 +602,7 @@ namespace LibRobot.Simulation
             foreach (var tt in _processingTriggerList)
             {
                 var ch = _channels[tt];
-                _nextTriggerList.AddRange(ch.Delays.Select(dd => _delays[dd].NextSignalChannel));
+                _nextTriggerList.AddRange(ch.DelayChannels);
 
                 for (int i = 0; i < ch.Components.Length; ++i)
                 {
