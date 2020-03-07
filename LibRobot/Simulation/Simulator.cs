@@ -1,11 +1,12 @@
-﻿using System;
+﻿using LibRobot.Graph;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace LibRobot.Graph
+namespace LibRobot.Simulation
 {
     public sealed class Simulator
     {

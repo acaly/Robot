@@ -1,8 +1,9 @@
-﻿using System;
+﻿using LibRobot.Graph;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace LibRobot.Graph
+namespace LibRobot.Simulation
 {
     public sealed class ComponentSimulationEnvironment
     {

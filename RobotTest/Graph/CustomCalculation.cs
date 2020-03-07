@@ -1,4 +1,5 @@
 using LibRobot.Graph;
+using LibRobot.Simulation;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
