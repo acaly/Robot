@@ -2,10 +2,11 @@ using LibRobot.Graph;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace RobotTest.Graph
 {
-    public class SimpleStart
+    public class CustomCalculation
     {
         private class TestCalculation : ISimulationHandler
         {
@@ -68,10 +69,10 @@ namespace RobotTest.Graph
             simulator.Start();
 
             int inputVal = 0x12345678;
-            simulator.DigitalWriter.Write("input", BitConverter.GetBytes(inputVal), 0);
+            simulator.DigitalWriter.Write("input", MemoryMarshal.Cast<int, byte>(MemoryMarshal.CreateSpan(ref inputVal, 1)));
             simulator.Tick();
             byte[] buffer = new byte[4];
-            simulator.DigitalReader.Read("output", buffer, 0);
+            simulator.DigitalReader.Read("output", buffer);
 
             Assert.AreEqual(~inputVal, BitConverter.ToInt32(buffer, 0));
         }

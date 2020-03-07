@@ -160,7 +160,7 @@ namespace LibRobot.Graph
                     currentLinkInfo.Sort((a, b) => a.Item2 - b.Item2);
                     for (int j = 0; j < currentLinkInfo.Count - 1; ++j)
                     {
-                        if (currentLinkInfo[j] == currentLinkInfo[j + 1])
+                        if (currentLinkInfo[j].Equals(currentLinkInfo[j + 1]))
                         {
                             currentLinkInfo.RemoveAt(j);
                             j -= 1;
@@ -584,7 +584,6 @@ namespace LibRobot.Graph
         public void Tick()
         {
             Trigger(_tickChannel);
-            //TODO update external components
             Step();
         }
 
@@ -737,18 +736,18 @@ namespace LibRobot.Graph
                 return mem.TotalLength;
             }
 
-            public void Read(string name, byte[] buffer, int offset)
+            public void Read(string name, Span<byte> buffer)
             {
                 if (!_simulator._digitalOutput.TryGetValue(name, out var index))
                 {
                     throw new KeyNotFoundException();
                 }
                 var mem = _simulator._memorySegments[index];
-                if (offset < 0 || offset + (mem.TotalLength + 7) / 8 > buffer.Length)
+                if ((mem.TotalLength + 7) / 8 > buffer.Length)
                 {
                     throw new ArgumentException();
                 }
-                _simulator.ReadMemory(index, new Span<byte>(buffer, offset, mem.TotalLength / 8), true);
+                _simulator.ReadMemory(index, buffer, true);
             }
         }
 
@@ -771,18 +770,18 @@ namespace LibRobot.Graph
                 return mem.TotalLength;
             }
 
-            public void Write(string name, byte[] buffer, int offset)
+            public void Write(string name, Span<byte> buffer)
             {
                 if (!_simulator._digitalInput.TryGetValue(name, out var index))
                 {
                     throw new KeyNotFoundException();
                 }
                 var mem = _simulator._memorySegments[index];
-                if (offset < 0 || offset + (mem.TotalLength + 7) / 8 > buffer.Length)
+                if ((mem.TotalLength + 7) / 8 > buffer.Length)
                 {
                     throw new ArgumentException();
                 }
-                _simulator.WriteMemory(index, new Span<byte>(buffer, offset, mem.TotalLength / 8), true);
+                _simulator.WriteMemory(index, buffer, true);
             }
         }
 
@@ -804,7 +803,7 @@ namespace LibRobot.Graph
             var len1 = 8 - move;
             var len2 = bitLength - len1;
             var first = buffer[alignedByteStart];
-            var second = len2 > 0 ? 0 : buffer[alignedByteStart + 1]; //Avoid accessing outside range
+            var second = len2 > 0 ? buffer[alignedByteStart + 1] : 0; //Avoid accessing outside range
             return (byte)(first >> move | second << len1);
         }
 

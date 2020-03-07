@@ -277,9 +277,12 @@ namespace LibRobot.Graph
                     {
                         return cp.Type switch
                         {
-                            ConnectionPointType.MemoryLink => ((MemoryComponent)cm[cp.Component]).ConnectionPoints.AddLink(),
-                            ConnectionPointType.MemoryReceive => ((MemoryComponent)cm[cp.Component]).ConnectionPoints.AddReceiver(),
-                            ConnectionPointType.MemorySend => ((MemoryComponent)cm[cp.Component]).ConnectionPoints.AddSender(),
+                            ConnectionPointType.MemoryLink =>
+                                ((MemoryComponent)cm[cp.Component]).ConnectionPoints.AddLink(cp.BitOffset, cp.BitLength),
+                            ConnectionPointType.MemoryReceive =>
+                                ((MemoryComponent)cm[cp.Component]).ConnectionPoints.AddReceiver(cp.BitOffset, cp.BitLength),
+                            ConnectionPointType.MemorySend =>
+                                ((MemoryComponent)cm[cp.Component]).ConnectionPoints.AddSender(cp.BitOffset, cp.BitLength),
                             _ => throw new Exception("internal error"),
                         };
                     }
