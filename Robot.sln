@@ -7,7 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibRobot", "LibRobot\LibRob
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RobotTest", "RobotTest\RobotTest.csproj", "{92F2C400-CEF5-4E33-8954-4E5901D9378E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProfilingTest", "ProfilingTest\ProfilingTest.csproj", "{5215FAE0-E450-4F3F-827E-DB66F8855F72}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProfilingTest", "ProfilingTest\ProfilingTest.csproj", "{5215FAE0-E450-4F3F-827E-DB66F8855F72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vm328", "Vm328\Vm328.csproj", "{E7A82976-40E7-4A4C-AD93-3FEC43CCF0DE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{5215FAE0-E450-4F3F-827E-DB66F8855F72}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5215FAE0-E450-4F3F-827E-DB66F8855F72}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5215FAE0-E450-4F3F-827E-DB66F8855F72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7A82976-40E7-4A4C-AD93-3FEC43CCF0DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7A82976-40E7-4A4C-AD93-3FEC43CCF0DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7A82976-40E7-4A4C-AD93-3FEC43CCF0DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7A82976-40E7-4A4C-AD93-3FEC43CCF0DE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

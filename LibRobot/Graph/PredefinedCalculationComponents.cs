@@ -1,4 +1,5 @@
-﻿using LibRobot.Simulation;
+﻿using LibRobot.Graph.Components;
+using LibRobot.Simulation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -72,5 +73,7 @@ namespace LibRobot.Graph
                 { "write", ConnectionPointType.MemorySend },
                 { "signal", ConnectionPointType.SignalReceive },
             });
+
+        public static readonly CalculationComponentType Add = CalculationComponentsDesc.Create<AddHandler>("add");
     }
 }

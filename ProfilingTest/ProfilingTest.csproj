@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LibRobot\LibRobot.csproj" />
+    <ProjectReference Include="..\Vm328\Vm328.csproj" />
   </ItemGroup>
 
 </Project>
