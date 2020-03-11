@@ -5,7 +5,7 @@ using System.Text;
 
 namespace LibRobot.Graph.Components
 {
-    internal class AddHandler : ISimulationHandler
+    internal class XorHandler : ISimulationHandler
     {
         public int GetStorageSize(ComponentSimulationEnvironment env)
         {
@@ -15,7 +15,7 @@ namespace LibRobot.Graph.Components
             {
                 throw new Exception();
             }
-            return read1 + 1;
+            return read1;
         }
 
         public unsafe void Read(ComponentSimulationEnvironment env)
@@ -29,27 +29,10 @@ namespace LibRobot.Graph.Components
             var bitLen = env.GetConnectionPointSize("read1");
             var byteLen = (bitLen + 7) / 8;
 
-            //Add byte by byte
-            //TODO fast path for 8,16,32 bit?
-            int carry = 0;
             for (int i = 0; i < byteLen; ++i)
             {
-                AddByte(ref s[i], tmp[i], ref carry);
+                s[i] ^= tmp[i];
             }
-
-            //s is 1 bit longer than input
-            //We should continue wrtie if input is 8n bits
-            if ((bitLen & 7) == 0)
-            {
-                s[s.Length - 1] = (byte)carry;
-            }
-        }
-
-        private void AddByte(ref byte a, byte b, ref int c)
-        {
-            var r = (byte)(a + b + c);
-            c = (byte)(b > 0 && r <= a ? 1 : 0);
-            a = r;
         }
 
         public void Write(ComponentSimulationEnvironment env)

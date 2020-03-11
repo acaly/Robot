@@ -75,5 +75,6 @@ namespace LibRobot.Graph
             });
 
         public static readonly CalculationComponentType Add = CalculationComponentsDesc.Create<AddHandler>("add");
+        public static readonly CalculationComponentType Xor = CalculationComponentsDesc.Create<XorHandler>("xor");
     }
 }

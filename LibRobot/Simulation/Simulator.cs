@@ -818,7 +818,7 @@ namespace LibRobot.Simulation
             if (alignedByteStart * 8 == bitOffset)
             {
                 //Fast path
-                buffer[alignedByteStart] = data;
+                buffer[alignedByteStart] = (byte)(data & ~(0xFF << bitLength));
                 return;
             }
             var move = bitOffset & 7;
@@ -837,7 +837,7 @@ namespace LibRobot.Simulation
 
         private static void CopyUnalignedMemory(Span<byte> src, int bitOffsetSrc, Span<byte> dest, int bitOffsetDest, int bitLength)
         {
-            if ((bitOffsetSrc & 7) == 0 && (bitOffsetDest & 7) == 0)
+            if (((bitOffsetSrc | bitOffsetDest | bitLength) & 7) == 0)
             {
                 //Fast path
                 var byteLength = (bitLength + 7) / 8;
