@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace LibRobot.Graph
@@ -217,7 +218,9 @@ namespace LibRobot.Graph
             {
                 if (c is MemoryComponent mc)
                 {
-                    componentMap.Add(c, dest.Components.AddMemory(mc.BitSize));
+                    var nc = dest.Components.AddMemory(mc.BitSize);
+                    nc.InitialData = mc.InitialData?.ToArray();
+                    componentMap.Add(c, nc);
                 }
                 else if (c is ExternalComponent ec)
                 {

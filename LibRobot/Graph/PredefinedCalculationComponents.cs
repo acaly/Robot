@@ -74,6 +74,14 @@ namespace LibRobot.Graph
                 { "signal", ConnectionPointType.SignalReceive },
             });
 
+        public static readonly CalculationComponentType FilterAny = new CalculationComponentType("filterAny", new FilterHandlerAny(),
+            new Dictionary<string, ConnectionPointType>()
+            {
+                { "read", ConnectionPointType.MemoryReceive },
+                { "signalIn", ConnectionPointType.SignalReceive },
+                { "signalOut", ConnectionPointType.SignalSend },
+            });
+
         public static readonly CalculationComponentType Add = CalculationComponentsDesc.Create<AddHandler>("add");
         public static readonly CalculationComponentType Xor = CalculationComponentsDesc.Create<XorHandler>("xor");
     }
